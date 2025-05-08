@@ -6,7 +6,7 @@ const Homepage = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google", // Specify Google as the OAuth provider
       options: {
-        redirectTo: "http://localhost:5173/dashboard", // Redirect after successful sign-in
+        redirectTo: "https://echo-meet-eight.vercel.app/dashboard", // Redirect after successful sign-in
       },
     });
 

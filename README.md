@@ -16,6 +16,15 @@ Echo Meet is a modern, browser-based video conferencing application designed for
 * 💬 Host name highlighted in the grid
 * 📱 Fully responsive UI
 
+ ## 🧠 How It Works
+- Users sign in with Google via Supabase Auth
+- Each meeting is assigned a short unique code (UUID)
+- Participants are tracked in a `room_participants` table
+- PeerJS handles real-time video/audio streaming via WebRTC
+- When users join a room, peer connections are auto-established
+- The UI updates in real time using Supabase’s realtime listeners
+
+
 ## 🛠 Tech Stack
 
 * **Frontend:** React + Vite + TypeScript

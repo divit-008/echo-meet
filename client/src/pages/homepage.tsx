@@ -19,13 +19,15 @@ const Homepage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 text-center">
       {/* Headline describing the product */}
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-medium text-gray-800 max-w-2xl leading-snug">
-        Simple meetings.<br />
+        Simple meetings.
+        <br />
         Clear connections.
       </h1>
 
       {/* Supporting text about the app */}
       <p className="mt-4 text-lg text-gray-600 max-w-xl">
-        Create or join meetings with a code or link — fast, clean, and distraction-free.
+        Create or join meetings with a code or link — fast, clean, and
+        distraction-free.
       </p>
 
       {/* Button to trigger sign-in flow */}

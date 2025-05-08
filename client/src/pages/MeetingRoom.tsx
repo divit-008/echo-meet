@@ -1,10 +1,10 @@
 // FINAL VERSION WITH STYLED HEADER AND FOOTER
-import { useParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
-import { supabase } from '../supabaseClient';
-import Peer from 'peerjs';
-import type PeerJS from 'peerjs';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "../supabaseClient";
+import Peer from "peerjs";
+import type PeerJS from "peerjs";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 // Interface defining the structure of a participant
 interface Participant {
@@ -36,7 +36,10 @@ const MeetingRoom = () => {
 
   // Fetch all participants from Supabase
   const fetchParticipants = async () => {
-    const { data } = await supabase.from('room_participants').select('*').eq('room_code', code);
+    const { data } = await supabase
+      .from("room_participants")
+      .select("*")
+      .eq("room_code", code);
     if (data) setParticipants(data as Participant[]);
   };
 
@@ -44,22 +47,24 @@ const MeetingRoom = () => {
   const getFreshStream = (): MediaStream => {
     const stream = new MediaStream();
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => stream.addTrack(track));
+      localStreamRef.current
+        .getTracks()
+        .forEach((track) => stream.addTrack(track));
     }
     return stream;
   };
 
   // Reconnect all peer connections using updated streams
   const reconnectPeers = () => {
-    Object.values(peersRef.current).forEach(call => call.close());
+    Object.values(peersRef.current).forEach((call) => call.close());
     peersRef.current = {};
 
-    participants.forEach(p => {
+    participants.forEach((p) => {
       if (p.user_id !== userId && p.peer_id && myPeerRef.current) {
         const freshStream = getFreshStream();
         const call = myPeerRef.current.call(p.peer_id, freshStream);
 
-        call.on('stream', (stream: MediaStream) => {
+        call.on("stream", (stream: MediaStream) => {
           remoteStreams.current[p.user_id] = stream;
 
           const videoEl = videoRefs.current[p.user_id];
@@ -74,7 +79,7 @@ const MeetingRoom = () => {
           }
         });
 
-        call.on('close', () => {
+        call.on("close", () => {
           delete remoteStreams.current[p.user_id];
         });
 
@@ -95,16 +100,19 @@ const MeetingRoom = () => {
       setUserId(user.id);
 
       const { data: room, error } = await supabase
-        .from('rooms')
-        .select('created_by')
-        .eq('code', code)
+        .from("rooms")
+        .select("created_by")
+        .eq("code", code)
         .single();
 
       if (!room || error) return setRoomExists(false);
       setRoomExists(true);
 
       const meta = user.user_metadata;
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       localStreamRef.current = stream;
 
       if (localVideoRef.current) {
@@ -114,35 +122,35 @@ const MeetingRoom = () => {
       }
 
       const peer = new Peer(user.id, {
-        host: '0.peerjs.com',
+        host: "0.peerjs.com",
         port: 443,
-        secure: true
+        secure: true,
       });
 
       myPeerRef.current = peer;
 
-      peer.on('open', async (peerId: string) => {
-        await supabase.from('room_participants').upsert({
+      peer.on("open", async (peerId: string) => {
+        await supabase.from("room_participants").upsert({
           room_code: code,
           user_id: user.id,
-          display_name: meta?.full_name || 'Guest',
-          avatar_url: meta?.picture || '',
+          display_name: meta?.full_name || "Guest",
+          avatar_url: meta?.picture || "",
           is_host: user.id === room.created_by,
           is_muted: false,
           video_on: true,
-          peer_id: peerId
+          peer_id: peerId,
         });
 
         await fetchParticipants();
         reconnectPeers();
       });
 
-      peer.on('call', (call: PeerJS.MediaConnection) => {
+      peer.on("call", (call: PeerJS.MediaConnection) => {
         const freshStream = getFreshStream();
         call.answer(freshStream);
 
-        call.on('stream', (remoteStream: MediaStream) => {
-          const matching = participants.find(p => p.peer_id === call.peer);
+        call.on("stream", (remoteStream: MediaStream) => {
+          const matching = participants.find((p) => p.peer_id === call.peer);
           if (!matching) return;
 
           remoteStreams.current[matching.user_id] = remoteStream;
@@ -161,8 +169,8 @@ const MeetingRoom = () => {
           }
         });
 
-        call.on('close', () => {
-          const matching = participants.find(p => p.peer_id === call.peer);
+        call.on("close", () => {
+          const matching = participants.find((p) => p.peer_id === call.peer);
           if (matching) delete remoteStreams.current[matching.user_id];
         });
 
@@ -171,10 +179,22 @@ const MeetingRoom = () => {
 
       // Set up real-time Supabase channel for participant changes
       channel = supabase
-        .channel('room_participants_changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_participants' }, fetchParticipants)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'room_participants' }, fetchParticipants)
-        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'room_participants' }, fetchParticipants)
+        .channel("room_participants_changes")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "room_participants" },
+          fetchParticipants
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "room_participants" },
+          fetchParticipants
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "room_participants" },
+          fetchParticipants
+        )
         .subscribe();
     };
 
@@ -183,7 +203,11 @@ const MeetingRoom = () => {
     return () => {
       // Cleanup: remove user from room and unsubscribe
       if (userId) {
-        supabase.from('room_participants').delete().eq('room_code', code).eq('user_id', userId);
+        supabase
+          .from("room_participants")
+          .delete()
+          .eq("room_code", code)
+          .eq("user_id", userId);
       }
       if (channel) supabase.removeChannel(channel);
     };
@@ -200,7 +224,11 @@ const MeetingRoom = () => {
 
   // Render fallback if room doesn't exist
   if (roomExists === false) {
-    return <div className="h-screen flex items-center justify-center text-red-600">Meeting not found.</div>;
+    return (
+      <div className="h-screen flex items-center justify-center text-red-600">
+        Meeting not found.
+      </div>
+    );
   }
 
   return (
@@ -211,7 +239,11 @@ const MeetingRoom = () => {
         <div className="flex items-center gap-3">
           <span className="text-sm opacity-90">Code: {code}</span>
           <button
-            onClick={() => navigator.clipboard.writeText(`${window.location.origin}/room/${code}`)}
+            onClick={() =>
+              navigator.clipboard.writeText(
+                `${window.location.origin}/room/${code}`
+              )
+            }
             className="text-sm px-3 py-1 rounded bg-white text-indigo-600 font-medium hover:bg-gray-100 transition"
           >
             Copy Link
@@ -220,13 +252,17 @@ const MeetingRoom = () => {
       </div>
 
       {/* Remote participant audio elements */}
-      {participants.filter(p => p.user_id !== userId).map(p => (
-        <audio
-          key={`audio-${p.user_id}`}
-          ref={el => { if (el) audioRefs.current[p.user_id] = el; }}
-          autoPlay
-        />
-      ))}
+      {participants
+        .filter((p) => p.user_id !== userId)
+        .map((p) => (
+          <audio
+            key={`audio-${p.user_id}`}
+            ref={(el) => {
+              if (el) audioRefs.current[p.user_id] = el;
+            }}
+            autoPlay
+          />
+        ))}
 
       {/* Video grid for local and remote participants */}
       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
@@ -241,41 +277,53 @@ const MeetingRoom = () => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white text-sm">Camera Off</div>
+            <div className="w-full h-full flex items-center justify-center text-white text-sm">
+              Camera Off
+            </div>
           )}
           <div className="absolute bottom-1 left-1 text-xs bg-black bg-opacity-60 text-white px-2 py-1 rounded">
-            You {isMuted ? '(Muted)' : ''}
+            You {isMuted ? "(Muted)" : ""}
           </div>
         </div>
 
         {/* Remote video displays */}
-        {participants.filter(p => p.user_id !== userId).map(p => (
-          <div key={p.user_id} className="relative aspect-video bg-black rounded overflow-hidden">
-            {p.video_on ? (
-              <video
-                ref={el => { if (el) videoRefs.current[p.user_id] = el; }}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={p.avatar_url || '/fallback-avatar.png'}
-                alt={p.display_name}
-                className="w-full h-full object-cover opacity-70"
-              />
-            )}
-            <div className="absolute bottom-1 left-1 text-xs bg-black bg-opacity-60 text-white px-2 py-1 rounded">
-              {p.is_host ? 'Host: ' : ''}{p.display_name} {p.is_muted ? '(Muted)' : ''}
-            </div>
-            {!p.video_on && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">Camera Off</span>
+        {participants
+          .filter((p) => p.user_id !== userId)
+          .map((p) => (
+            <div
+              key={p.user_id}
+              className="relative aspect-video bg-black rounded overflow-hidden"
+            >
+              {p.video_on ? (
+                <video
+                  ref={(el) => {
+                    if (el) videoRefs.current[p.user_id] = el;
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={p.avatar_url || "/fallback-avatar.png"}
+                  alt={p.display_name}
+                  className="w-full h-full object-cover opacity-70"
+                />
+              )}
+              <div className="absolute bottom-1 left-1 text-xs bg-black bg-opacity-60 text-white px-2 py-1 rounded">
+                {p.is_host ? "Host: " : ""}
+                {p.display_name} {p.is_muted ? "(Muted)" : ""}
               </div>
-            )}
-          </div>
-        ))}
+              {!p.video_on && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-white text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+                    Camera Off
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
       </div>
 
       {/* Footer with control buttons */}
@@ -286,12 +334,16 @@ const MeetingRoom = () => {
             setIsMuted(newMuted);
             const audioTrack = localStreamRef.current?.getAudioTracks()[0];
             if (audioTrack) audioTrack.enabled = !newMuted;
-            await supabase.from('room_participants').update({ is_muted: newMuted }).eq('room_code', code).eq('user_id', userId);
+            await supabase
+              .from("room_participants")
+              .update({ is_muted: newMuted })
+              .eq("room_code", code)
+              .eq("user_id", userId);
             await fetchParticipants();
           }}
           className="px-4 py-2 bg-white text-black font-medium rounded hover:bg-gray-100 transition"
         >
-          {isMuted ? 'Unmute' : 'Mute'}
+          {isMuted ? "Unmute" : "Mute"}
         </button>
 
         <button
@@ -300,18 +352,26 @@ const MeetingRoom = () => {
             setVideoOn(newVideo);
             const videoTrack = localStreamRef.current?.getVideoTracks()[0];
             if (videoTrack) videoTrack.enabled = newVideo;
-            await supabase.from('room_participants').update({ video_on: newVideo }).eq('room_code', code).eq('user_id', userId);
+            await supabase
+              .from("room_participants")
+              .update({ video_on: newVideo })
+              .eq("room_code", code)
+              .eq("user_id", userId);
             await fetchParticipants();
           }}
           className="px-4 py-2 bg-white text-black font-medium rounded hover:bg-gray-100 transition"
         >
-          {videoOn ? 'Stop Video' : 'Start Video'}
+          {videoOn ? "Stop Video" : "Start Video"}
         </button>
 
         <button
           onClick={async () => {
-            await supabase.from('room_participants').delete().eq('room_code', code).eq('user_id', userId);
-            window.location.href = '/';
+            await supabase
+              .from("room_participants")
+              .delete()
+              .eq("room_code", code)
+              .eq("user_id", userId);
+            window.location.href = "/";
           }}
           className="px-4 py-2 bg-red-500 text-white font-medium rounded hover:bg-red-600 transition"
         >

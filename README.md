@@ -4,9 +4,6 @@
 
 Echo Meet is a modern, browser-based video conferencing application designed for simplicity and speed. Whether you're hosting a quick team call or joining a friend via a meeting link, Echo Meet provides a seamless experience with minimal setup.
 
-**Version:** 1.0.0
-
-**Echo Meet** is a lightweight, real-time video meeting app built with React, Vite, Supabase, and WebRTC. It supports Google authentication, room creation via code or link, and a clean, responsive UI.
 ## 🚀 Features
 
 * 🔒 Google Sign-In via Supabase Auth
